@@ -94,6 +94,19 @@
 			<version>3.11.4</version>
 		</dependency>
 
+<!--		Added retrofit dependency-->
+		<!--		Added Retrofit dependency-->
+		<dependency>
+			<groupId>com.squareup.retrofit2</groupId>
+			<artifactId>retrofit</artifactId>
+			<version>2.5.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.squareup.retrofit2</groupId>
+			<artifactId>converter-gson</artifactId>
+			<version>2.5.0</version>
+		</dependency>
+
 	</dependencies>
 
 	<dependencyManagement>

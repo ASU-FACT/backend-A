@@ -31,6 +31,9 @@ import org.dpppt.backend.sdk.model.ExposeeRequestList;
 import org.dpppt.backend.sdk.model.proto.Exposed;
 import org.dpppt.backend.sdk.ws.security.ValidateRequest;
 import org.dpppt.backend.sdk.ws.security.ValidateRequest.InvalidDateException;
+import org.dpppt.backend.sdk.ws.util.ResponseCallback;
+import org.dpppt.backend.sdk.ws.util.ServerBReportRepository;
+import org.dpppt.backend.sdk.ws.util.ServerBReportService;
 import org.dpppt.backend.sdk.ws.util.ValidationUtils;
 import org.dpppt.backend.sdk.ws.util.ValidationUtils.BadBatchReleaseTimeException;
 import org.springframework.http.CacheControl;
@@ -53,6 +56,12 @@ import org.springframework.web.context.request.WebRequest;
 
 import com.google.protobuf.ByteString;
 
+import okhttp3.OkHttpClient;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 @Controller
 @RequestMapping("/v1")
 public class DPPPTController {
@@ -64,8 +73,9 @@ public class DPPPTController {
 	private final ValidationUtils validationUtils;
 	private final long batchLength;
 	private final long requestTime;
-
-
+	private ArrayList<Integer> aggregate;
+	private int NoOfVectorsReceived;
+	private ServerBReportRepository serverBReportRepository;
 	public DPPPTController(DPPPTDataService dataService, String appSource,
 			int exposedListCacheControl, ValidateRequest validateRequest, ValidationUtils validationUtils, long batchLength,
 			long requestTime) {
@@ -81,6 +91,30 @@ public class DPPPTController {
 	@CrossOrigin(origins = { "https://editor.swagger.io" })
 	@GetMapping(value = "")
 	public @ResponseBody ResponseEntity<String> hello() {
+		System.out.println("v1 Get Request received");
+		ResponseCallback<Void> callback = new ResponseCallback<Void>() {
+			@Override
+			public void onSuccess(Void response) {
+				System.out.println("Success");
+			}
+
+			@Override
+			public void onError(Throwable throwable) {
+				System.out.println("Error: "+throwable.getLocalizedMessage());
+			}
+		};
+		ServerBReportRepository reportRepository = new ServerBReportRepository("http://192.168.1.9:8082/");
+		reportRepository.testGetCall(new ResponseCallback<Void>() {
+			@Override
+			public void onSuccess(Void response) {
+				callback.onSuccess(response);
+			}
+
+			@Override
+			public void onError(Throwable throwable) {
+				callback.onError(throwable);
+			}
+		});
 		return ResponseEntity.ok().header("X-HELLO", "dp3t").body("Hello from DP3T WS");
 	}
 
@@ -114,6 +148,85 @@ public class DPPPTController {
 
 		}
 		return ResponseEntity.ok().build();
+	}
+	@PostMapping(value = "/addHotspot")
+	public @ResponseBody ResponseEntity<String> addHotspot(@Valid @RequestBody ArrayList<Integer> hotspotVector) {
+		System.out.println("Received vector at /v1/addHotspot");
+		NoOfVectorsReceived++;
+		if(aggregate ==null)
+		{
+			aggregate = new ArrayList<Integer>();
+		}
+		for(int i=0;i<hotspotVector.size();i++)
+		{
+			int a = hotspotVector.get(i);
+			if(NoOfVectorsReceived==1){
+				aggregate.add(a);
+			}
+			else
+				aggregate.set(i, aggregate.get(i)+a);
+			System.out.print(a+" ");
+
+		}
+		System.out.println();
+		if(NoOfVectorsReceived==3){
+			System.out.println("Random Aggregate");
+			for(Integer a:aggregate)
+				System.out.print(a+" ");
+			System.out.println();
+			// Send aggregate to server B
+			sendAggregate(new ResponseCallback<Void>() {
+				@Override
+				public void onSuccess(Void response) {
+					System.out.println("Sent aggregrate to server B");
+					// TO DO
+					// Clear aggregate? Store?
+
+				}
+				@Override
+				public void onError(Throwable throwable) {
+
+					System.out.println(throwable.getMessage());
+					// Log error
+				}
+			});
+		}
+		return ResponseEntity.ok().build();
+	}
+
+	private void sendAggregate(ResponseCallback<Void> responseCallback){
+		if(serverBReportRepository==null)
+			serverBReportRepository = new ServerBReportRepository();
+		serverBReportRepository.aggregateHotspots(aggregate,responseCallback);
+//		OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+//
+//		Retrofit retrofit = new Retrofit.Builder()
+//				.baseUrl("http://192.168.1.9:8082")
+//				.addConverterFactory(GsonConverterFactory.create())
+//				.client(httpClient.build())
+//				.build();
+//		ServerBReportService reportService = retrofit.create(ServerBReportService.class);
+////		Call<Void> callSync = reportService.aggregateHotspots(aggregate);
+//		reportService.aggregateHotspots(aggregate).enqueue(new Callback<Void>() {
+//			@Override
+//			public void onResponse(Call<Void> call, Response<Void> response) {
+//				if(response.isSuccessful()){
+//					System.out.println("Sent aggregate to server B.");
+//				}
+//			}
+//
+//			@Override
+//			public void onFailure(Call<Void> call, Throwable throwable) {
+//				System.out.println(throwable.getMessage());
+//			}
+//		});
+
+//		try {
+//			callSync.execute();
+//		} catch (Exception ex) {
+//			ex.printStackTrace();
+//		}
+
 	}
 
 	@CrossOrigin(origins = { "https://editor.swagger.io" })
