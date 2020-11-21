@@ -14,7 +14,10 @@ import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import java.util.ArrayList;
+
 public class Exposee {
+
 	@JsonIgnore
 	private Integer Id;
 
@@ -24,6 +27,17 @@ public class Exposee {
 	@NotNull
 	private long keyDate;
 
+	private ArrayList<String> hashes;
+
+	public ArrayList<String> getHashes() {
+		return hashes;
+	}
+
+	public void setHashes(ArrayList<String> hashes) {
+		this.hashes = new ArrayList<>();
+		this.hashes.addAll(hashes);
+	}
+
 	public String getKey() {
 		return key;
 	}
@@ -31,6 +45,7 @@ public class Exposee {
 	public void setKey(String key) {
 		this.key = key;
 	}
+
 
 	@JsonIgnore
 	public Integer getId() {

@@ -10,14 +10,13 @@
 
 package org.dpppt.backend.sdk.ws.controller;
 
+import java.lang.reflect.Array;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
+import java.util.*;
 
 import javax.validation.Valid;
 
@@ -103,7 +102,7 @@ public class DPPPTController {
 				System.out.println("Error: "+throwable.getLocalizedMessage());
 			}
 		};
-		ServerBReportRepository reportRepository = new ServerBReportRepository("http://192.168.1.9:8082/");
+		ServerBReportRepository reportRepository = new ServerBReportRepository("http://192.168.1.10:8082/");
 		reportRepository.testGetCall(new ResponseCallback<Void>() {
 			@Override
 			public void onSuccess(Void response) {
@@ -134,12 +133,16 @@ public class DPPPTController {
 		Exposee exposee = new Exposee();
 		exposee.setKey(exposeeRequest.getKey());
 		long keyDate = this.validateRequest.getKeyDate(principal, exposeeRequest);
-
+		boolean testing = true;
 		exposee.setKeyDate(keyDate);
 		if (!this.validateRequest.isFakeRequest(principal, exposeeRequest)) {
-			dataService.upsertExposee(exposee, appSource);
+			System.out.println("Exposed hashes:"+exposeeRequest.getHashes());
+//			dataService.upsertExposee(exposee, appSource);
+			exposee.setHashes(exposeeRequest.getHashes());
+/*
+*/
+			dataService.upsertExposeeHashes(exposee,appSource);
 		}
-
 		long after = System.currentTimeMillis();
 		long duration = after - now;
 		try {
@@ -148,85 +151,6 @@ public class DPPPTController {
 
 		}
 		return ResponseEntity.ok().build();
-	}
-	@PostMapping(value = "/addHotspot")
-	public @ResponseBody ResponseEntity<String> addHotspot(@Valid @RequestBody ArrayList<Integer> hotspotVector) {
-		System.out.println("Received vector at /v1/addHotspot");
-		NoOfVectorsReceived++;
-		if(aggregate ==null)
-		{
-			aggregate = new ArrayList<Integer>();
-		}
-		for(int i=0;i<hotspotVector.size();i++)
-		{
-			int a = hotspotVector.get(i);
-			if(NoOfVectorsReceived==1){
-				aggregate.add(a);
-			}
-			else
-				aggregate.set(i, aggregate.get(i)+a);
-			System.out.print(a+" ");
-
-		}
-		System.out.println();
-		if(NoOfVectorsReceived==3){
-			System.out.println("Random Aggregate");
-			for(Integer a:aggregate)
-				System.out.print(a+" ");
-			System.out.println();
-			// Send aggregate to server B
-			sendAggregate(new ResponseCallback<Void>() {
-				@Override
-				public void onSuccess(Void response) {
-					System.out.println("Sent aggregrate to server B");
-					// TO DO
-					// Clear aggregate? Store?
-
-				}
-				@Override
-				public void onError(Throwable throwable) {
-
-					System.out.println(throwable.getMessage());
-					// Log error
-				}
-			});
-		}
-		return ResponseEntity.ok().build();
-	}
-
-	private void sendAggregate(ResponseCallback<Void> responseCallback){
-		if(serverBReportRepository==null)
-			serverBReportRepository = new ServerBReportRepository();
-		serverBReportRepository.aggregateHotspots(aggregate,responseCallback);
-//		OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
-//
-//		Retrofit retrofit = new Retrofit.Builder()
-//				.baseUrl("http://192.168.1.9:8082")
-//				.addConverterFactory(GsonConverterFactory.create())
-//				.client(httpClient.build())
-//				.build();
-//		ServerBReportService reportService = retrofit.create(ServerBReportService.class);
-////		Call<Void> callSync = reportService.aggregateHotspots(aggregate);
-//		reportService.aggregateHotspots(aggregate).enqueue(new Callback<Void>() {
-//			@Override
-//			public void onResponse(Call<Void> call, Response<Void> response) {
-//				if(response.isSuccessful()){
-//					System.out.println("Sent aggregate to server B.");
-//				}
-//			}
-//
-//			@Override
-//			public void onFailure(Call<Void> call, Throwable throwable) {
-//				System.out.println(throwable.getMessage());
-//			}
-//		});
-
-//		try {
-//			callSync.execute();
-//		} catch (Exception ex) {
-//			ex.printStackTrace();
-//		}
-
 	}
 
 	@CrossOrigin(origins = { "https://editor.swagger.io" })
@@ -267,6 +191,8 @@ public class DPPPTController {
 		return ResponseEntity.ok().build();
 	}
 
+
+
 	@CrossOrigin(origins = { "https://editor.swagger.io" })
 	@GetMapping(value = "/exposedjson/{batchReleaseTime}", produces = "application/json")
 	public @ResponseBody ResponseEntity<ExposedOverview> getExposedByDayDate(@PathVariable long batchReleaseTime,
@@ -281,6 +207,59 @@ public class DPPPTController {
 		return ResponseEntity.ok().cacheControl(CacheControl.maxAge(Duration.ofMinutes(exposedListCacheControl)))
 				.header("X-BATCH-RELEASE-TIME", Long.toString(batchReleaseTime)).body(overview);
 	}
+
+	@CrossOrigin(origins = { "https://editor.swagger.io" })
+	@GetMapping(value = "/exposedHashes/{batchReleaseTime}", produces = "application/json")
+	public @ResponseBody ResponseEntity<HashSet<String>> getExposedHashesByDayDate(@PathVariable long batchReleaseTime,
+																			   WebRequest request) throws BadBatchReleaseTimeException{
+		if(!validationUtils.isValidBatchReleaseTime(batchReleaseTime)) {
+			return ResponseEntity.notFound().build();
+		}
+		HashSet<String> hashes = new HashSet<>();
+		System.out.println(batchReleaseTime);
+		hashes.addAll(dataService.getSortedExposedHashes());
+//		hashes.addAll(dataService.getSortedExposedHashesForBatchReleaseTime(batchReleaseTime, batchLength));
+		System.out.println("Collected hashes from database = "+hashes);
+		return ResponseEntity.ok().cacheControl(CacheControl.maxAge(Duration.ofMinutes(exposedListCacheControl)))
+				.header("X-BATCH-RELEASE-TIME", Long.toString(batchReleaseTime)).body(hashes);
+	}
+
+
+	@CrossOrigin(origins = { "https://editor.swagger.io" })
+	@GetMapping(value = "/testExposedHashes/{count}", produces = "application/json")
+	public @ResponseBody ResponseEntity<HashSet<String>> getTestExposedHashes(@PathVariable int count, WebRequest request){
+//		boolean testing = true;
+//		if(testing){
+//			count = 0;
+//			Thread newThread = new Thread(() ->{
+//				dataService.upsertTestHashes(generateXHashes(3000000,10));
+//				System.out.println("Write to database completed.");
+//			});
+//			newThread.start();
+//		}
+		HashSet<String> hashes = new HashSet<>();
+		hashes.addAll( dataService.getSortedExposedHashesForTest(count));
+		System.out.println("Collected test hashes from database = "+hashes.size());
+		return ResponseEntity.ok().cacheControl(CacheControl.maxAge(Duration.ofMinutes(exposedListCacheControl))).body(hashes);
+	}
+
+	private static ArrayList<String> generateXHashes(int count, int hashBytes) {
+		char[] hexDigits = {'0', '1', '2', '3', '4', '5',
+				'6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+		Random random = new Random();
+		ArrayList<String> randomHashes = new ArrayList<>();
+		for (int j = 0; j < count; j++){
+			StringBuffer sb = new StringBuffer();
+			for (int i = 0; i < hashBytes*2; i++) {
+				sb.append(hexDigits[random.nextInt(hexDigits.length)]);
+			}
+			randomHashes.add(sb.toString());
+//			System.out.println(sb.toString());
+		}
+		System.out.println("Generated random hashes =" + randomHashes.size());
+		return randomHashes;
+	}
+
 
 	@CrossOrigin(origins = { "https://editor.swagger.io" })
 	@GetMapping(value = "/exposed/{batchReleaseTime}", produces = "application/x-protobuf")
@@ -328,5 +307,93 @@ public class DPPPTController {
 	public ResponseEntity<Object> invalidArguments() {
 		return ResponseEntity.badRequest().build();
 	}
+
+
+	@PostMapping(value = "/addHotspot")
+	public @ResponseBody ResponseEntity<String> addHotspot(@Valid @RequestBody ArrayList<Integer> hotspotVector) {
+		System.out.println("Received vector at /v1/addHotspot");
+		NoOfVectorsReceived++;
+		if(aggregate ==null)
+		{
+			aggregate = new ArrayList<Integer>();
+		}
+		for(int i=0;i<hotspotVector.size();i++)
+		{
+			int a = hotspotVector.get(i);
+			if(NoOfVectorsReceived%3==1){
+				aggregate.add(a);
+			}
+			else
+				aggregate.set(i, aggregate.get(i)+a);
+			System.out.print(a+" ");
+
+		}
+		System.out.println();
+		if(NoOfVectorsReceived%3==0){
+			System.out.println("Random Aggregate = " + aggregate);
+
+			// Send aggregate to server B
+			sendAggregate(new ResponseCallback<Void>() {
+				@Override
+				public void onSuccess(Void response) {
+					System.out.println("Sent aggregrate to server B");
+					// TODO
+					// Clear aggregate? Store?
+					aggregate = null;
+
+				}
+				@Override
+				public void onError(Throwable throwable) {
+
+					System.out.println(throwable.getMessage());
+					// Log error
+				}
+			});
+		}
+		return ResponseEntity.ok().build();
+	}
+
+	private void sendAggregate(ResponseCallback<Void> responseCallback){
+		if(serverBReportRepository==null)
+			serverBReportRepository = new ServerBReportRepository();
+		serverBReportRepository.aggregateHotspots(aggregate,responseCallback);
+//		OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+//
+//		Retrofit retrofit = new Retrofit.Builder()
+//				.baseUrl("http://192.168.1.9:8082")
+//				.addConverterFactory(GsonConverterFactory.create())
+//				.client(httpClient.build())
+//				.build();
+//		ServerBReportService reportService = retrofit.create(ServerBReportService.class);
+////		Call<Void> callSync = reportService.aggregateHotspots(aggregate);
+//		reportService.aggregateHotspots(aggregate).enqueue(new Callback<Void>() {
+//			@Override
+//			public void onResponse(Call<Void> call, Response<Void> response) {
+//				if(response.isSuccessful()){
+//					System.out.println("Sent aggregate to server B.");
+//				}
+//			}
+//
+//			@Override
+//			public void onFailure(Call<Void> call, Throwable throwable) {
+//				System.out.println(throwable.getMessage());
+//			}
+//		});
+
+//		try {
+//			callSync.execute();
+//		} catch (Exception ex) {
+//			ex.printStackTrace();
+//		}
+
+	}
+	public class MyRunnable implements Runnable {
+
+		public void run(){
+			System.out.println("MyRunnable running");
+		}
+	}
+
+
 
 }

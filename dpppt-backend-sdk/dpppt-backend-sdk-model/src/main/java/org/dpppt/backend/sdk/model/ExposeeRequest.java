@@ -12,6 +12,7 @@ package org.dpppt.backend.sdk.model;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import java.util.ArrayList;
 
 public class ExposeeRequest {
 
@@ -25,6 +26,20 @@ public class ExposeeRequest {
 	private long keyDate;
 
 	private ExposeeAuthData authData;
+
+	private ArrayList<String> hashes;
+
+	public ArrayList<String> getHashes() {
+		return hashes;
+	}
+
+	public void setHashes(ArrayList<String> hashes) {
+		if(hashes != null)
+		{
+			this.hashes = new ArrayList<>();
+			this.hashes.addAll(hashes);
+		}
+	}
 
 	public String getKey() {
 		return key;

@@ -11,6 +11,8 @@
 package org.dpppt.backend.sdk.data;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.dpppt.backend.sdk.model.Exposee;
@@ -28,7 +30,7 @@ public interface DPPPTDataService {
 	/**
 	 * Upserts the given exposees (if keys cannot be derived from one master key)
 	 * 
-	 * @param exposeex  the list of exposees to upsert
+	 * @param exposees  the list of exposees to upsert
 	 * @param appSource the app name
 	 */
 	void upsertExposees(List<Exposee> exposees, String appSource);
@@ -58,4 +60,14 @@ public interface DPPPTDataService {
 	 */
 	void cleanDB(Duration retentionPeriod);
 
+	void upsertExposeeHashes(Exposee exposee, String appSource);
+
+	List<String> getSortedExposedHashesForBatchReleaseTime(long batchReleaseTime, long batchLength);
+
+	List<String> getSortedExposedHashesForTest(int count);
+
+	void upsertTestHashes(ArrayList<String> testHashes);
+
+
+	List<String> getSortedExposedHashes();
 }

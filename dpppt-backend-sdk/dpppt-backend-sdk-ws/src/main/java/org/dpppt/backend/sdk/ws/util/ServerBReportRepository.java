@@ -16,7 +16,7 @@ public class ServerBReportRepository {
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
 
 		Retrofit retrofit = new Retrofit.Builder()
-				.baseUrl("http://192.168.1.9:8082")
+				.baseUrl("http://192.168.1.10:8082")
 				.addConverterFactory(GsonConverterFactory.create())
 				.client(httpClient.build())
 				.build();
