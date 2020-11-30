@@ -32,8 +32,8 @@ The platform has two backend servers for the secure hotspots histogram protocol.
 The SDK for Android contains code for prototyping and testing the protocol, and is not yet complete. It has not yet been reviewed or audited for security and compatibility. 
 
 
-
-Documentation from DP-3T SDK-Backend 
+  
+The below documentation is from DP-3T SDK-Backend 
 ## Reproducible Builds
 In order to have reproducible builds the [io.github.zlika](https://github.com/zlika/reproducible-build-maven-plugin) maven plugin is used. It replaces all timestamp with the timestamp of the last commit, and orders the entries in the JAR alphabetically. The github action then computes the sha256sum of the resulting JAR and adds the output as an build artifact.
 
