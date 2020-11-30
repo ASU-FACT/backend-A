@@ -29,7 +29,8 @@ The platform has two backend servers for the secure hotspots histogram protocol.
 * Backend-B SDK: [dp3t-sdk-backend](https://github.com/ASU-FACT/backend-B)
 
 ## Work in Progress
-The SDK for Android contains code for prototyping and testing the protocol, and is not yet complete. It has not yet been reviewed or audited for security and compatibility. 
+This SDK contains code for prototyping and testing the protocol, and is not yet complete. It has not yet been reviewed or audited for security and compatibility. 
+
 
 
   
