@@ -1,33 +1,39 @@
 <!-- Issue templates and Contributing guides are taken from the fastlane repository and adjusted for our needs (https://github.com/fastlane/fastlane/tree/master/.github/ISSUE_TEMPLATE) and  -->
-# DP3T-Backend-SDK
+# ASU-FACT SDK for Backend-A
+## ASU-FACT - Arizona State University - Federated Analytics based Contact Tracing platform
+Existing contact tracing protocols based solely on exchange of random tokens via Bluetooth Low Energy (BLE) are vulnerable to a range of attacks. Moreover, they do not leverage the rich device-level data for providing intelligent assessment and useful indicators. FACT provides a secure Contact Tracing (CT) protocol based on BLE+GPS, and applies a refined paradigm of federated learning to leverage both device-level data and server capabilities. FACT enable private, secure CT for prevention and intervention by including hotspot identification, user alerts, and continual assessment of user COVID-19 risk. This approach guarantees a private, secure, and verifiable way to (i) evaluate a user’s need for testing or their resilience to exposure, and (ii) assess herd immunity across the population.
+Goals of the FACT framework:
+Secure, Resilient and Scalable Contact Tracing
+Assessing User Risk in a Federated Manner
+Scalable and Private FL for FACT
 
-![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)
-![Java CI with Maven](https://github.com/DP-3T/dp3t-sdk-backend/workflows/Java%20CI%20with%20Maven/badge.svg?branch=master)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=DP-3T_dp3t-sdk-backend&metric=alert_status)](https://sonarcloud.io/dashboard?id=DP-3T_dp3t-sdk-backend)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=DP-3T_dp3t-sdk-backend&metric=coverage)](https://sonarcloud.io/dashboard?id=DP-3T_dp3t-sdk-backend)
+# Introduction
+The overview of the contact tracing protocol is as shown in the figure below.
+<p align="center">
+    <img src="Protocol.png" width="512">
+</p>
+When two users are in close proximity, the devices exchange random tokens via BLE. Each device periodically stores the user location as well. The random tokens are augmented with location data. If the user is infected, the device computes hashes of broadcast tokens with the location and timestamp of broadcast, and then shared with the server. When a device receives a token, it stores the hash of the received token, geohash, and timestamp. Devices periodically query the server to receive the newly uploaded infected user hashes. These hashes are compared with hashes of received tokens and an exposure is reported if there’s a match.
+For the secure hotspots histogram computation, the protocol requires user devices to secret share a vector encoding of places visited between two non-colluding servers, server A and server B. Each server aggregates the shares it receives. Server A then sends its aggregate to server B, which server B adds to its aggregate. This results in server B recovering the correct value of the aggregate of the vectors, without the ability to decode any one user's vector. 
+<!-- For determining areas of high-risk, the goal is to research and develop a solution based on secure aggregation techniques. Each user device stores the location trace. By securely aggregating traces of multiple positively diagnosed users, the locations above a threshold number of visits can be regarded as hotspots.  -->
 
-## License
-This project is licensed under the terms of the MPL 2 license. See the [LICENSE](LICENSE) file.
+## SDK for Backend-A
+The platform has two backend servers for the secure hotspots histogram protocol. This documentation describes the backend-A used for the CT protocol. This backend SDK extends from the DP-3T backend SDK. The Decentralised Privacy-Preserving Proximity Tracing ([DP-3T](https://github.com/DP-3T)) project is an open protocol for COVID-19 proximity tracing using BLE. It has been implemented as an open source protocol in the form of an app and server. We modify and extend the DP3T BT based protocol, in which BT tokens are exchanged, and a key is shared with the server when a user is infected. In our protocol, the BT tokens are augmented with location data. For an infected user, the Hashes of BT token, location co-ordinates and time stamp are shared with the server. Extensions made in this backend-SDK are:
+* Collection and storage of infected users' hashes rather than keys
+* Distribution of infected users' hashes to querying devices
+* Aggregation of shares of hotspot vectors
 
 ## Repositories
-* Android SDK & Calibration app: [dp3t-sdk-android](https://github.com/DP-3T/dp3t-sdk-android)
-* iOS SDK & Calibration app: [dp3t-sdk-ios](https://github.com/DP-3T/dp3t-sdk-ios)
-* Android Demo App: [dp3t-app-android](https://github.com/DP-3T/dp3t-app-android)
-* iOS Demo App: [dp3t-app-ios](https://github.com/DP-3T/dp3t-app-ios)
-* Backend SDK: [dp3t-sdk-backend](https://github.com/DP-3T/dp3t-sdk-backend)
+* Android SDK & Calibration app: [dp3t-sdk-android](https://github.com/DP-3T/sdk-android-prestandard)
+* Android App: [dp3t-app-android](https://github.com/ASU-FACT/calibration-app)
+* Backend-A SDK: [dp3t-sdk-backend](https://github.com/ASU-FACT/backend-A)
+* Backend-B SDK: [dp3t-sdk-backend](https://github.com/ASU-FACT/backend-B)
 
-## DP3T
-The Decentralised Privacy-Preserving Proximity Tracing (DP3T) project is an open protocol for COVID-19 proximity tracing using Bluetooth Low Energy functionality on mobile devices, which ensures that personal data and computation stay entirely on an individual's phone. It was produced by a core team of over 25 scientists and academic researchers from across Europe. It has also been scrutinized and improved by the wider community.
+## Work in Progress
+The SDK for Android contains code for prototyping and testing the protocol, and is not yet complete. It has not yet been reviewed or audited for security and compatibility. 
 
-DP3T is a free-standing effort, begun at the EPFL and ETHZ, where the protocol was produced and where the implementation into an open-sourced app and server is taking place.
 
-## Contribution Guide
 
-Please read the [Contribution Guide](CONTRIBUTING.md) before submitting any pull-request.
-
-## Introduction
-This documentation describes the backend used for the SwissCovid application. It is focused on providing information for the requests used for the Exposure Notification framework. Although, code of the old format is still provided, no documentation or support is available except the code itself.
-
+Documentation from DP-3T SDK-Backend 
 ## Reproducible Builds
 In order to have reproducible builds the [io.github.zlika](https://github.com/zlika/reproducible-build-maven-plugin) maven plugin is used. It replaces all timestamp with the timestamp of the last commit, and orders the entries in the JAR alphabetically. The github action then computes the sha256sum of the resulting JAR and adds the output as an build artifact.
 
