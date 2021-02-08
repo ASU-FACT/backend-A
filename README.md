@@ -24,17 +24,17 @@ The platform has two backend servers for the secure hotspots histogram protocol.
 
 ## Repositories
 * Android SDK & Calibration app: [dp3t-sdk-android](https://github.com/DP-3T/sdk-android-prestandard)
-* Android App: [dp3t-app-android](https://github.com/ASU-FACT/calibration-app)
 * Backend-A SDK: [dp3t-sdk-backend](https://github.com/ASU-FACT/backend-A)
 * Backend-B SDK: [dp3t-sdk-backend](https://github.com/ASU-FACT/backend-B)
 
+The below documentation is from DP-3T SDK-Backend 
 ## Work in Progress
 This SDK contains code for prototyping and testing the protocol, and is not yet complete. It has not yet been reviewed or audited for security and compatibility. 
 
 
 
   
-The below documentation is from DP-3T SDK-Backend 
+
 ## Reproducible Builds
 In order to have reproducible builds the [io.github.zlika](https://github.com/zlika/reproducible-build-maven-plugin) maven plugin is used. It replaces all timestamp with the timestamp of the last commit, and orders the entries in the JAR alphabetically. The github action then computes the sha256sum of the resulting JAR and adds the output as an build artifact.
 
